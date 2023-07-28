@@ -3,11 +3,50 @@ import boto3
 import random
 import string
 import time
+import os
+    
+def choose_the_region():
+    ec2 = boto3.client('ec2')
+    response = ec2.describe_regions()
+    i=0
+    for region in response['Regions']:
+        message=get_region_location(region['RegionName'])
+        print(f"{i} - {message}")
+        i=i+1
+    choosen_region = input("\nType the number of the choosen the region where you want your vpn: ")
+    return response['Regions'][int(choosen_region)]['RegionName']    
 
-region = "eu-central-1"
-ec2 = boto3.client('ec2', region_name = region)
-iam = boto3.client('iam')
+def get_region_location(region_code):
+    region_mappings = {
+        'af-south-1': ('Cape Town', 'South Africa'),
+        'ap-east-1': ('Hong Kong', 'China'),
+        'ap-northeast-1': ('Tokyo', 'Japan'),
+        'ap-northeast-2': ('Seoul', 'South Korea'),
+        'ap-northeast-3': ('Osaka-Local', 'Japan'),
+        'ap-south-1': ('Mumbai', 'India'),
+        'ap-southeast-1': ('Singapore', 'Singapore'),
+        'ap-southeast-2': ('Sydney', 'Australia'),
+        'ca-central-1': ('Central', 'Canada'),
+        'cn-north-1': ('Beijing', 'China'),
+        'cn-northwest-1': ('Ningxia', 'China'),
+        'eu-central-1': ('Frankfurt', 'Germany'),
+        'eu-north-1': ('Stockholm', 'Sweden'),
+        'eu-south-1': ('Milan', 'Italy'),
+        'eu-west-1': ('Ireland', 'Ireland'),
+        'eu-west-2': ('London', 'United Kingdom'),
+        'eu-west-3': ('Paris', 'France'),
+        'me-south-1': ('Bahrain', 'Bahrain'),
+        'sa-east-1': ('Sao Paulo', 'Brazil'),
+        'us-east-1': ('N. Virginia', 'USA'),
+        'us-east-2': ('Ohio', 'USA'),
+        'us-west-1': ('N. California', 'USA'),
+        'us-west-2': ('Oregon', 'USA'),
+    }
 
+    if region_code in region_mappings:
+        return region_mappings[region_code]
+    else:
+        return ('Unknown', 'Unknown')
 
 def generate_random_string(length):
     letters = string.ascii_letters + string.digits
@@ -32,11 +71,20 @@ def get_default_vpc_id():
     
     return None
 
-def create_security_group(vpc_id):
+def create_security_group_if_it_does_not_exist(vpc_id):
     random_string = generate_random_string(10)
-    group_name = "SudVPN-"+random_string
+    group_name = "SudVPN-do-not-modify"
     description = 'this is to be used by sudvpn'
 
+    response = ec2.describe_security_groups(
+        Filters=[
+            {'Name': 'group-name', 'Values': [group_name]},
+            {'Name': 'vpc-id', 'Values': [vpc_id]}
+        ]
+    )    
+    if response['SecurityGroups']:
+        return response['SecurityGroups'][0]['GroupId']
+    
     response = ec2.create_security_group(
         GroupName=group_name,
         Description=description,
@@ -127,7 +175,7 @@ def get_role_arn(role_name):
     
     return None
 
-def create_ec2_instance(subnet_id,sg_id,bucket_name,profile_name):
+def create_ec2_instance(subnet_id,sg_id,bucket_name,profile_name,time):
     
     # Get the latest Ubuntu AMI ID
     response = ec2.describe_images(
@@ -145,7 +193,7 @@ def create_ec2_instance(subnet_id,sg_id,bucket_name,profile_name):
     response = ec2.run_instances(
         ImageId=ami_id,
         InstanceType='t3.micro',
-        UserData=get_user_data(bucket_name),
+        UserData=get_user_data(bucket_name,time),
         SecurityGroupIds=[sg_id],
         SubnetId=subnet_id,
         MinCount=1,
@@ -157,7 +205,7 @@ def create_ec2_instance(subnet_id,sg_id,bucket_name,profile_name):
     
     return instance_id
 
-def get_user_data(bucket_name):
+def get_user_data(bucket_name, time):
     # Create a script to terminate the instance after 10 minutes
     user_data = f"""#!/bin/bash
 wget -O openvpn.sh https://get.vpnsetup.net/ovpn
@@ -170,7 +218,7 @@ y
 ANSWERS
 apt install awscli jq -y
 aws s3 cp /root/client.ovpn s3://{bucket_name}/client-$(curl -s http://169.254.169.254/latest/meta-data/instance-id)-$(curl --silent http://169.254.169.254/latest/dynamic/instance-identity/document | jq -r .region).ovpn
-sleep 600
+sleep {time}
 aws ec2 terminate-instances --instance-ids $(curl -s http://169.254.169.254/latest/meta-data/instance-id) --region $(curl --silent http://169.254.169.254/latest/dynamic/instance-identity/document | jq -r .region)
 """
     return user_data
@@ -223,16 +271,79 @@ def wait_for_iam_profile(profile_name):
     print(f"The IAM profile '{profile_name}' exists.")
 
 def download_file(bucket_name, file_key, destination_path):
-    s3_client = boto3.client('s3')
-    s3_client.download_file(bucket_name, file_key, destination_path)    
+    s3_client.download_file(bucket_name, file_key, destination_path+file_key)    
     print(f"The file '{file_key}' has been downloaded to '{destination_path}'.")
 
+def delete_file(bucket_name, file_key):
+    response = s3_client.delete_object(
+    Bucket=bucket_name,
+    Key=file_key)
+    print(f"The file '{file_key}' has been deleted" )
+
+def get_region_location(region_code):
+    region_mappings = {
+        'af-south-1': ('Cape Town', 'South Africa'),
+        'ap-east-1': ('Hong Kong', 'China'),
+        'ap-northeast-1': ('Tokyo', 'Japan'),
+        'ap-northeast-2': ('Seoul', 'South Korea'),
+        'ap-northeast-3': ('Osaka-Local', 'Japan'),
+        'ap-south-1': ('Mumbai', 'India'),
+        'ap-southeast-1': ('Singapore', 'Singapore'),
+        'ap-southeast-2': ('Sydney', 'Australia'),
+        'ca-central-1': ('Central', 'Canada'),
+        'cn-north-1': ('Beijing', 'China'),
+        'cn-northwest-1': ('Ningxia', 'China'),
+        'eu-central-1': ('Frankfurt', 'Germany'),
+        'eu-north-1': ('Stockholm', 'Sweden'),
+        'eu-south-1': ('Milan', 'Italy'),
+        'eu-west-1': ('Ireland', 'Ireland'),
+        'eu-west-2': ('London', 'United Kingdom'),
+        'eu-west-3': ('Paris', 'France'),
+        'me-south-1': ('Bahrain', 'Bahrain'),
+        'sa-east-1': ('Sao Paulo', 'Brazil'),
+        'us-east-1': ('N. Virginia', 'USA'),
+        'us-east-2': ('Ohio', 'USA'),
+        'us-west-1': ('N. California', 'USA'),
+        'us-west-2': ('Oregon', 'USA'),
+    }
+
+    if region_code in region_mappings:
+        return region_mappings[region_code]
+    else:
+        return ('Unknown', 'Unknown')
+
+def select_the_time():
+    time = [
+        ['10 minutes', 600],
+        ['20 minutes', 1200],
+        ['30 minutes', 1800],
+        ['1 hour', 3600],
+        ['1 hour and 30 minutes', 5400],
+        ['2 hours', 7200]
+    ]
+    i=0
+    print("Type the number of choosen VPN Server Duration")
+    for ele in time:
+        print(f"{i} - {ele[0]}")
+        i=i+1
+    decision=input("\nInsert a number: ")
+    return time[int(decision)][1]
+
+# Get the available regions
+region = choose_the_region()
+print(f"You are working on the {region}")
+
+ec2 = boto3.client('ec2', region_name = region)
+iam = boto3.client('iam')
+s3_client = boto3.client('s3')
+
+time = select_the_time()
 
 # Retrieve the default VPC ID
 default_vpc_id = get_default_vpc_id()
 print(default_vpc_id)
 # Create the security group
-security_group_id = create_security_group(default_vpc_id)
+security_group_id = create_security_group_if_it_does_not_exist(default_vpc_id)
 
 # Specify the desired role name
 role_name = 'SudVPN-Ec2Role' #and profile name are the same
@@ -256,12 +367,25 @@ print(bucket_to_use)
 
 wait_for_iam_profile(role_name)
 
-instance_id = create_ec2_instance(subnet_id,security_group_id,bucket_to_use,role_name)
+print("Creating the OpenVPNServer, you need to wait few minutes")
+instance_id = create_ec2_instance(subnet_id,security_group_id,bucket_to_use,role_name,time)
 print(instance_id)
 
 config_file_key="client-"+instance_id+"-"+region+".ovpn"
 wait_for_file(bucket_to_use, config_file_key)
 
-# Example usage
-destination_path = '~/Downloads/'
+# download the file in your laptop
+destination_path = '/tmp/'
 download_file(bucket_to_use, config_file_key, destination_path)
+
+# remove the file from the s3 bucket we don't need it anymore
+delete_file(bucket_to_use, config_file_key)
+
+binary_file = "/Applications/OpenVPN\ Connect/OpenVPN\ Connect.app/Contents/MacOS/OpenVPN\ Connect "
+option_config = "--import-profile="
+#insert profile
+os.system(binary_file+option_config+destination_path+config_file_key)
+#open the client
+os.system(binary_file)
+
+print("after you finished remove from your openvpn client the profile for the new vpn")
