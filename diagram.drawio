@@ -1,0 +1,52 @@
+<mxfile host="Electron" modified="2023-08-24T12:34:39.880Z" agent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) draw.io/21.5.0 Chrome/112.0.5615.204 Electron/24.5.1 Safari/537.36" etag="QRLxMBQSJivJNAAZmIW3" version="21.5.0" type="device">
+  <diagram name="Page-1" id="ct_6wlmby2jzl4FPbATt">
+    <mxGraphModel dx="1570" dy="569" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="c8Y8wJNa-GmbBk0ausFE-1" value="Default VPC - different regions" style="points=[[0,0],[0.25,0],[0.5,0],[0.75,0],[1,0],[1,0.25],[1,0.5],[1,0.75],[1,1],[0.75,1],[0.5,1],[0.25,1],[0,1],[0,0.75],[0,0.5],[0,0.25]];outlineConnect=0;gradientColor=none;html=1;whiteSpace=wrap;fontSize=12;fontStyle=0;container=1;pointerEvents=0;collapsible=0;recursiveResize=0;shape=mxgraph.aws4.group;grIcon=mxgraph.aws4.group_vpc;strokeColor=#248814;fillColor=none;verticalAlign=top;align=left;spacingLeft=30;fontColor=#AAB7B8;dashed=0;" vertex="1" parent="1">
+          <mxGeometry x="80" y="160" width="400" height="340" as="geometry" />
+        </mxCell>
+        <mxCell id="c8Y8wJNa-GmbBk0ausFE-2" value="Public subnet" style="points=[[0,0],[0.25,0],[0.5,0],[0.75,0],[1,0],[1,0.25],[1,0.5],[1,0.75],[1,1],[0.75,1],[0.5,1],[0.25,1],[0,1],[0,0.75],[0,0.5],[0,0.25]];outlineConnect=0;gradientColor=none;html=1;whiteSpace=wrap;fontSize=12;fontStyle=0;container=1;pointerEvents=0;collapsible=0;recursiveResize=0;shape=mxgraph.aws4.group;grIcon=mxgraph.aws4.group_security_group;grStroke=0;strokeColor=#248814;fillColor=#E9F3E6;verticalAlign=top;align=left;spacingLeft=30;fontColor=#248814;dashed=0;" vertex="1" parent="c8Y8wJNa-GmbBk0ausFE-1">
+          <mxGeometry x="30" y="60" width="170" height="180" as="geometry" />
+        </mxCell>
+        <mxCell id="c8Y8wJNa-GmbBk0ausFE-11" value="Security group" style="fillColor=none;strokeColor=#DD3522;verticalAlign=top;fontStyle=0;fontColor=#DD3522;whiteSpace=wrap;html=1;" vertex="1" parent="c8Y8wJNa-GmbBk0ausFE-2">
+          <mxGeometry x="20" y="30" width="110" height="130" as="geometry" />
+        </mxCell>
+        <mxCell id="c8Y8wJNa-GmbBk0ausFE-5" value="EC2 with &lt;br&gt;OpenVPN server" style="outlineConnect=0;dashed=0;verticalLabelPosition=bottom;verticalAlign=top;align=center;html=1;shape=mxgraph.aws3.ec2;fillColor=#F58534;gradientColor=none;" vertex="1" parent="c8Y8wJNa-GmbBk0ausFE-2">
+          <mxGeometry x="40" y="53.5" width="60" height="56.5" as="geometry" />
+        </mxCell>
+        <mxCell id="c8Y8wJNa-GmbBk0ausFE-14" value="" style="sketch=0;pointerEvents=1;shadow=0;dashed=0;html=1;strokeColor=none;fillColor=#DF8C42;labelPosition=center;verticalLabelPosition=bottom;verticalAlign=top;align=center;outlineConnect=0;shape=mxgraph.veeam2.open_vpn;" vertex="1" parent="c8Y8wJNa-GmbBk0ausFE-2">
+          <mxGeometry x="90" y="80" width="34" height="34" as="geometry" />
+        </mxCell>
+        <mxCell id="c8Y8wJNa-GmbBk0ausFE-3" value="Public subnet" style="points=[[0,0],[0.25,0],[0.5,0],[0.75,0],[1,0],[1,0.25],[1,0.5],[1,0.75],[1,1],[0.75,1],[0.5,1],[0.25,1],[0,1],[0,0.75],[0,0.5],[0,0.25]];outlineConnect=0;gradientColor=none;html=1;whiteSpace=wrap;fontSize=12;fontStyle=0;container=1;pointerEvents=0;collapsible=0;recursiveResize=0;shape=mxgraph.aws4.group;grIcon=mxgraph.aws4.group_security_group;grStroke=0;strokeColor=#248814;fillColor=#E9F3E6;verticalAlign=top;align=left;spacingLeft=30;fontColor=#248814;dashed=0;" vertex="1" parent="c8Y8wJNa-GmbBk0ausFE-1">
+          <mxGeometry x="230" y="60" width="150" height="180" as="geometry" />
+        </mxCell>
+        <mxCell id="c8Y8wJNa-GmbBk0ausFE-4" value="internet gateway" style="sketch=0;outlineConnect=0;fontColor=#232F3E;gradientColor=none;fillColor=#4D27AA;strokeColor=none;dashed=0;verticalLabelPosition=bottom;verticalAlign=top;align=center;html=1;fontSize=12;fontStyle=0;aspect=fixed;pointerEvents=1;shape=mxgraph.aws4.internet_gateway;" vertex="1" parent="1">
+          <mxGeometry x="260" y="130" width="48" height="48" as="geometry" />
+        </mxCell>
+        <mxCell id="c8Y8wJNa-GmbBk0ausFE-8" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" edge="1" parent="1" source="c8Y8wJNa-GmbBk0ausFE-6" target="c8Y8wJNa-GmbBk0ausFE-5">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="c8Y8wJNa-GmbBk0ausFE-9" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" edge="1" parent="1" source="c8Y8wJNa-GmbBk0ausFE-6" target="c8Y8wJNa-GmbBk0ausFE-7">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="c8Y8wJNa-GmbBk0ausFE-6" value="SudVPN-Ec2Role" style="outlineConnect=0;dashed=0;verticalLabelPosition=bottom;verticalAlign=top;align=center;html=1;shape=mxgraph.aws3.role;fillColor=#759C3E;gradientColor=none;" vertex="1" parent="1">
+          <mxGeometry x="-40" y="277" width="60" height="49.5" as="geometry" />
+        </mxCell>
+        <mxCell id="c8Y8wJNa-GmbBk0ausFE-7" value="IAM Permission" style="sketch=0;outlineConnect=0;fontColor=#232F3E;gradientColor=none;fillColor=#BF0816;strokeColor=none;dashed=0;verticalLabelPosition=bottom;verticalAlign=top;align=center;html=1;fontSize=12;fontStyle=0;aspect=fixed;pointerEvents=1;shape=mxgraph.aws4.permissions;" vertex="1" parent="1">
+          <mxGeometry x="-29.869999999999997" y="380" width="39.74" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="c8Y8wJNa-GmbBk0ausFE-10" value="S3 for openvpn &lt;br&gt;config files" style="outlineConnect=0;dashed=0;verticalLabelPosition=bottom;verticalAlign=top;align=center;html=1;shape=mxgraph.aws3.s3;fillColor=#E05243;gradientColor=none;" vertex="1" parent="1">
+          <mxGeometry x="-40" y="160" width="50" height="53" as="geometry" />
+        </mxCell>
+        <mxCell id="c8Y8wJNa-GmbBk0ausFE-13" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" edge="1" parent="1" source="c8Y8wJNa-GmbBk0ausFE-12" target="c8Y8wJNa-GmbBk0ausFE-5">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="c8Y8wJNa-GmbBk0ausFE-12" value="SUD-VPN laptop&lt;br&gt;boto3 and OpenVPN installed" style="image;html=1;image=img/lib/clip_art/computers/Laptop_128x128.png" vertex="1" parent="1">
+          <mxGeometry x="140" width="80" height="80" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
