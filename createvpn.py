@@ -5,57 +5,86 @@ import string
 import time
 import os
 import json
+from pkg_resources import resource_filename
+
     
 def choose_the_region():
     ec2 = boto3.client('ec2')
     response = ec2.describe_regions()
     i=0
     for region in response['Regions']:
-        message=get_region_location(region['RegionName'])
+        #message=get_region_location(region['RegionName'])
+        message = get_region_name(region['RegionName'])
         print(f"{i} - {message}")
         i=i+1
     choosen_region = input("\nType the number of the choosen the region where you want your vpn: ")
     return response['Regions'][int(choosen_region)]['RegionName']    
 
-def get_region_location(region_code):
-    region_mappings = {
-        'af-south-1': ('Cape Town', 'South Africa'),
-        'ap-east-1': ('Hong Kong', 'China'),
-        'ap-northeast-1': ('Tokyo', 'Japan'),
-        'ap-northeast-2': ('Seoul', 'South Korea'),
-        'ap-northeast-3': ('Osaka-Local', 'Japan'),
-        'ap-south-1': ('Mumbai', 'India'),
-        'ap-southeast-1': ('Singapore', 'Singapore'),
-        'ap-southeast-2': ('Sydney', 'Australia'),
-        'ca-central-1': ('Central', 'Canada'),
-        'cn-north-1': ('Beijing', 'China'),
-        'cn-northwest-1': ('Ningxia', 'China'),
-        'eu-central-1': ('Frankfurt', 'Germany'),
-        'eu-north-1': ('Stockholm', 'Sweden'),
-        'eu-south-1': ('Milan', 'Italy'),
-        'eu-west-1': ('Ireland', 'Ireland'),
-        'eu-west-2': ('London', 'United Kingdom'),
-        'eu-west-3': ('Paris', 'France'),
-        'me-south-1': ('Bahrain', 'Bahrain'),
-        'sa-east-1': ('Sao Paulo', 'Brazil'),
-        'us-east-1': ('N. Virginia', 'USA'),
-        'us-east-2': ('Ohio', 'USA'),
-        'us-west-1': ('N. California', 'USA'),
-        'us-west-2': ('Oregon', 'USA'),
-    }
+def get_region_name(region_code):
+    default_region = 'US East (N. Virginia)'
+    endpoint_file = resource_filename('botocore', 'data/endpoints.json')
+    try:
+        with open(endpoint_file, 'r') as f:
+            data = json.load(f)
+        # Botocore is using Europe while Pricing API using EU...sigh...
+        return data['partitions'][0]['regions'][region_code]['description'].replace('Europe', 'EU')
+    except IOError:
+        return default_region
 
-    if region_code in region_mappings:
-        return region_mappings[region_code]
-    else:
-        return ('Unknown', 'Unknown')
+def get_price_on_demand_per_hour(region, instance, os):
+    # Search product filter. This will reduce the amount of data returned by the
+    # get_products function of the Pricing API
+    FLT = '[{{"Field": "tenancy", "Value": "shared", "Type": "TERM_MATCH"}},'\
+        '{{"Field": "operatingSystem", "Value": "{o}", "Type": "TERM_MATCH"}},'\
+        '{{"Field": "preInstalledSw", "Value": "NA", "Type": "TERM_MATCH"}},'\
+        '{{"Field": "instanceType", "Value": "{t}", "Type": "TERM_MATCH"}},'\
+        '{{"Field": "location", "Value": "{r}", "Type": "TERM_MATCH"}},'\
+        '{{"Field": "capacitystatus", "Value": "Used", "Type": "TERM_MATCH"}}]'
+
+    f = FLT.format(r=region, t=instance, o=os)
+    pricing_client = boto3.client('pricing', region_name='us-east-1')
+    data = pricing_client.get_products(ServiceCode='AmazonEC2', Filters=json.loads(f))
+    od = json.loads(data['PriceList'][0])['terms']['OnDemand']
+    id1 = list(od)[0]
+    id2 = list(od[id1]['priceDimensions'])[0]
+    return od[id1]['priceDimensions'][id2]['pricePerUnit']['USD']
+
+# def get_region_location(region_code):
+#     region_mappings = {
+#         'af-south-1': ('Cape Town', 'South Africa'),
+#         'ap-east-1': ('Hong Kong', 'China'),
+#         'ap-northeast-1': ('Tokyo', 'Japan'),
+#         'ap-northeast-2': ('Seoul', 'South Korea'),
+#         'ap-northeast-3': ('Osaka-Local', 'Japan'),
+#         'ap-south-1': ('Mumbai', 'India'),
+#         'ap-southeast-1': ('Singapore', 'Singapore'),
+#         'ap-southeast-2': ('Sydney', 'Australia'),
+#         'ca-central-1': ('Central', 'Canada'),
+#         'cn-north-1': ('Beijing', 'China'),
+#         'cn-northwest-1': ('Ningxia', 'China'),
+#         'eu-central-1': ('Frankfurt', 'Germany'),
+#         'eu-north-1': ('Stockholm', 'Sweden'),
+#         'eu-south-1': ('Milan', 'Italy'),
+#         'eu-west-1': ('Ireland', 'Ireland'),
+#         'eu-west-2': ('London', 'United Kingdom'),
+#         'eu-west-3': ('Paris', 'France'),
+#         'me-south-1': ('Bahrain', 'Bahrain'),
+#         'sa-east-1': ('Sao Paulo', 'Brazil'),
+#         'us-east-1': ('N. Virginia', 'USA'),
+#         'us-east-2': ('Ohio', 'USA'),
+#         'us-west-1': ('N. California', 'USA'),
+#         'us-west-2': ('Oregon', 'USA'),
+#     }
+
+#     if region_code in region_mappings:
+#         return region_mappings[region_code]
+#     else:
+#         return ('Unknown', 'Unknown')
 
 def generate_random_string(length):
     letters = string.ascii_letters + string.digits
     return ''.join(random.choice(letters) for _ in range(length))
 
-def create_ec2_machine():
-    # a machine with the permission to autodestory after some time
-    return True
 
 def get_default_vpc_id():
     response = ec2.describe_vpcs(
@@ -157,7 +186,7 @@ def get_role_arn(role_name):
     
     return None
 
-def create_ec2_instance(subnet_id,sg_id,bucket_name,profile_name,time):
+def create_ec2_instance(subnet_id,sg_id,bucket_name,profile_name,time_seconds):
     
     # Get the latest Ubuntu AMI ID
     response = ec2.describe_images(
@@ -175,19 +204,30 @@ def create_ec2_instance(subnet_id,sg_id,bucket_name,profile_name,time):
     response = ec2.run_instances(
         ImageId=ami_id,
         InstanceType='t3.micro',
-        UserData=get_user_data(bucket_name,time),
+        UserData=get_user_data(bucket_name,time_seconds),
         SecurityGroupIds=[sg_id],
         SubnetId=subnet_id,
         MinCount=1,
         MaxCount=1,
         IamInstanceProfile={'Name': profile_name},
+        TagSpecifications=[
+           {
+                'ResourceType': 'instance',
+                'Tags': [
+                    {
+                        'Key': 'Name',
+                        'Value': 'SudVPN-autodestroy-ec2'
+                    },
+                ]
+            },
+        ],
     )
     
     instance_id = response['Instances'][0]['InstanceId']
     
     return instance_id
 
-def get_user_data(bucket_name, time):
+def get_user_data(bucket_name, time_seconds):
     # Create a script to terminate the instance after 10 minutes
     user_data = f"""#!/bin/bash
 wget -O openvpn.sh https://get.vpnsetup.net/ovpn
@@ -200,7 +240,7 @@ y
 ANSWERS
 apt install awscli jq -y
 aws s3 cp /root/client.ovpn s3://{bucket_name}/client-$(curl -s http://169.254.169.254/latest/meta-data/instance-id)-$(curl --silent http://169.254.169.254/latest/dynamic/instance-identity/document | jq -r .region).ovpn
-sleep {time}
+sleep {time_seconds}
 aws ec2 terminate-instances --instance-ids $(curl -s http://169.254.169.254/latest/meta-data/instance-id) --region $(curl --silent http://169.254.169.254/latest/dynamic/instance-identity/document | jq -r .region)
 """
     return user_data
@@ -251,7 +291,8 @@ def wait_for_iam_profile(profile_name):
     waiter.wait(InstanceProfileName=profile_name)
     
     print(f"The IAM profile '{profile_name}' exists.")
-    time.sleep(5) 
+    
+    time.sleep(3) 
     #without this sleep there is an error like this one
     #botocore.exceptions.ClientError: An error occurred (InvalidParameterValue) when calling the RunInstances operation: Value (SudVPN-Ec2Role) for parameter iamInstanceProfile.name is invalid. Invalid IAM Instance Profile name
     #the wait is not enough
@@ -298,22 +339,23 @@ def get_region_location(region_code):
     else:
         return ('Unknown', 'Unknown')
 
-def select_the_time():
-    time = [
-        ['10 minutes', 600],
-        ['20 minutes', 1200],
-        ['30 minutes', 1800],
-        ['1 hour', 3600],
-        ['1 hour and 30 minutes', 5400],
-        ['2 hours', 7200]
+def select_the_time(selected_region):
+    cost_1_hour = float(get_price_on_demand_per_hour(get_region_name(selected_region), 't3.micro', 'Linux'))
+    possible_time = [
+        ['10 minutes            ', 600, str(round(cost_1_hour/6, 6))],
+        ['20 minutes            ', 1200, str(round(cost_1_hour/3, 6))],
+        ['30 minutes            ', 1800, str(round(cost_1_hour/2, 6))],
+        ['1 hour                ', 3600, str(round(cost_1_hour, 6))],
+        ['1 hour and 30 minutes ', 5400, str(round(cost_1_hour+cost_1_hour/2, 6))],
+        ['2 hours               ', 7200, str(round(cost_1_hour*2, 6))]
     ]
     i=0
     print("Type the number of choosen VPN Server Duration")
-    for ele in time:
-        print(f"{i} - {ele[0]}")
+    for ele in possible_time:
+        print(f"{i} - {ele[0]} cost for the instance in USD {ele[2]}")
         i=i+1
     decision=input("\nInsert a number: ")
-    return time[int(decision)][1]
+    return possible_time[int(decision)][1]
 
 def create_iam_policy(iam,role_name):
 
@@ -357,7 +399,9 @@ ec2 = boto3.client('ec2', region_name = region)
 iam = boto3.client('iam')
 s3_client = boto3.client('s3')
 
-time = select_the_time()
+time_seconds = select_the_time(region)
+print("For many regions the outgoind traffic from EC2 to internet is 0,09 USD per GB")
+print("The EC2 storage cost is irrelevant")
 
 # Retrieve the default VPC ID
 default_vpc_id = get_default_vpc_id()
@@ -392,7 +436,7 @@ print(bucket_to_use)
 wait_for_iam_profile(role_name)
 
 print("Creating the OpenVPNServer, you need to wait few minutes")
-instance_id = create_ec2_instance(subnet_id,security_group_id,bucket_to_use,role_name,time)
+instance_id = create_ec2_instance(subnet_id,security_group_id,bucket_to_use,role_name,time_seconds)
 print(instance_id)
 
 config_file_key="client-"+instance_id+"-"+region+".ovpn"
