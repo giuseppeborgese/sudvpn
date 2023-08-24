@@ -4,6 +4,7 @@ import random
 import string
 import time
 import os
+import json
     
 def choose_the_region():
     ec2 = boto3.client('ec2')
@@ -124,25 +125,6 @@ def create_ec2_role(role_name):
     )
     
     role_arn = response['Role']['Arn']
-    
-    # Attach the policy to the role
-    iam.attach_role_policy(
-        RoleName=role_name,
-        PolicyArn='arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore'
-    )
-    
-    iam.attach_role_policy(
-        RoleName=role_name,
-        PolicyArn='arn:aws:iam::aws:policy/AmazonEC2FullAccess'
-    )
-    iam.attach_role_policy(
-        RoleName=role_name,
-        PolicyArn='arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore'
-    )
-    iam.attach_role_policy(
-        RoleName=role_name,
-        PolicyArn='arn:aws:iam::aws:policy/AmazonS3FullAccess'
-    )
 
     response = iam.create_instance_profile(InstanceProfileName=role_name)
     response = iam.add_role_to_instance_profile(InstanceProfileName=role_name,RoleName=role_name)
@@ -269,6 +251,10 @@ def wait_for_iam_profile(profile_name):
     waiter.wait(InstanceProfileName=profile_name)
     
     print(f"The IAM profile '{profile_name}' exists.")
+    time.sleep(5) 
+    #without this sleep there is an error like this one
+    #botocore.exceptions.ClientError: An error occurred (InvalidParameterValue) when calling the RunInstances operation: Value (SudVPN-Ec2Role) for parameter iamInstanceProfile.name is invalid. Invalid IAM Instance Profile name
+    #the wait is not enough
 
 def download_file(bucket_name, file_key, destination_path):
     s3_client.download_file(bucket_name, file_key, destination_path+file_key)    
@@ -329,6 +315,40 @@ def select_the_time():
     decision=input("\nInsert a number: ")
     return time[int(decision)][1]
 
+def create_iam_policy(iam,role_name):
+
+    # Define the policy document in JSON format
+    policy_document = {
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Effect": "Allow",
+            "Action": "ec2:TerminateInstances",
+            "Resource": "*"
+        },
+        {
+            "Effect": "Allow",
+            "Action": "s3:PutObject",
+            "Resource": "arn:aws:s3:::sudvpn-openconfig-files*/*"
+        }
+        ]
+    }
+
+    # Create the custom policy
+    response = iam.create_policy(
+        PolicyName="SudVPN-restrict-policy",
+        PolicyDocument=json.dumps(policy_document, indent=4)
+    )
+    policy_arn = response['Policy']['Arn']
+
+    # Attach the policy to the role
+    iam.attach_role_policy(
+        RoleName=role_name,
+        PolicyArn=policy_arn
+    )
+    
+
+
 # Get the available regions
 region = choose_the_region()
 print(f"You are working on the {region}")
@@ -353,10 +373,14 @@ if role_arn:
     print(f"Role '{role_name}' exists with ARN: {role_arn}")
 else:
     print(f"Role '{role_name}' does not exist.")
-    # Create the EC2 role with the policy
+    # Create the EC2 role
     role_arn = create_ec2_role(role_name)
+    #create the policy and attach to the role
+    print("creating a policy and attach to the role")
+    create_iam_policy(iam, role_name)
 
 print(role_arn)
+
 
 # Example usage
 subnet_id = get_first_subnet_id(default_vpc_id)
@@ -381,11 +405,16 @@ download_file(bucket_to_use, config_file_key, destination_path)
 # remove the file from the s3 bucket we don't need it anymore
 delete_file(bucket_to_use, config_file_key)
 
+print()
+print("Below messages are from open OpenVPN Binary")
+print("--------------------------------------------")
 binary_file = "/Applications/OpenVPN\ Connect/OpenVPN\ Connect.app/Contents/MacOS/OpenVPN\ Connect "
 option_config = "--import-profile="
 #insert profile
 os.system(binary_file+option_config+destination_path+config_file_key)
 #open the client
 os.system(binary_file)
-
+print("--------------------------------------------")
+print("Above messages are from open OpenVPN Binary")
+print()
 print("after you finished remove from your openvpn client the profile for the new vpn")
