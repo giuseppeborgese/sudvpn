@@ -10,19 +10,37 @@ from pkg_resources import resource_filename
     
 def choose_the_region():
     ec2 = boto3.client('ec2')
-    response = ec2.describe_regions()
+    response = ec2.describe_regions(AllRegions=True)
     i=0
     for region in response['Regions']:
         #message=get_region_location(region['RegionName'])
         message = get_region_name(region['RegionName'])
-        print(f"{i} - {message}")
+        enabled=True
+        if region['OptInStatus'] == "not-opted-in":
+            enabled=False
+        print(f"{i} - enabled {enabled} - {message}")
         i=i+1
+
+    print("\nIf you select a region not enabled the script will enable but the process \nwill require some minutes or hours until the region will be shown as enabled")
     choosen_region = input("\nType the number of the choosen the region where you want your vpn: ")
+    
+    if response['Regions'][int(choosen_region)]['OptInStatus'] == "not-opted-in":
+        enable_region(response['Regions'][int(choosen_region)]['RegionName'])  
+    
     return response['Regions'][int(choosen_region)]['RegionName']    
+
+def enable_region(region_code):
+    account_client = boto3.client('account')
+    response = account_client.enable_region(RegionName=region_code)
+    print(f"\nThe region {region_code} will be enabled but this can requires some minutes or some hours until ready")
+    print("try to check for the region later, the program will close for now")
+    exit(1)
 
 def get_region_name(region_code):
     default_region = 'US East (N. Virginia)'
     endpoint_file = resource_filename('botocore', 'data/endpoints.json')
+    if region_code == "il-central-1": #for some reason the system is giving me error on this at the moment
+        return "Israel (Tel Aviv)"
     try:
         with open(endpoint_file, 'r') as f:
             data = json.load(f)
@@ -399,9 +417,9 @@ ec2 = boto3.client('ec2', region_name = region)
 iam = boto3.client('iam')
 s3_client = boto3.client('s3')
 
-time_seconds = select_the_time(region)
 print("For many regions the outgoind traffic from EC2 to internet is 0,09 USD per GB")
 print("The EC2 storage cost is irrelevant")
+time_seconds = select_the_time(region)
 
 # Retrieve the default VPC ID
 default_vpc_id = get_default_vpc_id()
