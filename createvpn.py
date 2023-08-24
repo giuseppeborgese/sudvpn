@@ -310,7 +310,7 @@ def wait_for_iam_profile(profile_name):
     
     print(f"The IAM profile '{profile_name}' exists.")
     
-    time.sleep(3) 
+    time.sleep(6) 
     #without this sleep there is an error like this one
     #botocore.exceptions.ClientError: An error occurred (InvalidParameterValue) when calling the RunInstances operation: Value (SudVPN-Ec2Role) for parameter iamInstanceProfile.name is invalid. Invalid IAM Instance Profile name
     #the wait is not enough
