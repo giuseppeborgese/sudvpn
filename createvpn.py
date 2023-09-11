@@ -417,7 +417,7 @@ ec2 = boto3.client('ec2', region_name = region)
 iam = boto3.client('iam')
 s3_client = boto3.client('s3')
 
-print("For many regions the outgoind traffic from EC2 to internet is 0,09 USD per GB")
+print("For many regions the outgoing traffic from EC2 to internet is 0,09 USD per GB")
 print("The EC2 storage cost is irrelevant")
 time_seconds = select_the_time(region)
 
