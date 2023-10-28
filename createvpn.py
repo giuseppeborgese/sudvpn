@@ -65,12 +65,9 @@ def get_price_on_demand_per_hour(region, instance, os):
     f = FLT.format(r=region, t=instance, o=os)
     pricing_client = boto3.client('pricing', region_name='us-east-1')
     data = pricing_client.get_products(ServiceCode='AmazonEC2', Filters=json.loads(f))
-    print(data)
     od = json.loads(data['PriceList'][0])['terms']['OnDemand']
     id1 = list(od)[0]
     id2 = list(od[id1]['priceDimensions'])[0]
-    print(id1)
-    print(id2)
     return od[id1]['priceDimensions'][id2]['pricePerUnit']['USD']
 
 # def get_region_location(region_code):
