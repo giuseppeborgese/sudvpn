@@ -361,11 +361,14 @@ def get_region_location(region_code):
         return ('Unknown', 'Unknown')
 
 def select_the_time(selected_region):
-    #### this is a dirty trick because there is an issue on boto3 pricing api for Spain
+    #### this is a dirty trick because there is an issue on boto3 pricing api for new regions
     #WWW I'm not proud of this, let's hope to fix soon
+    cost_1_hour = 'standard'
     if selected_region == 'eu-south-2':
         cost_1_hour = float('0.0114')
-    else:
+    if selected_region == 'eu-central-2':
+        cost_1_hour = float('0.0132')    
+    if cost_1_hour == 'standard':
         cost_1_hour = float(get_price_on_demand_per_hour(get_region_name(selected_region), my_instance_type, 'Linux'))
     #####
     possible_time = [
