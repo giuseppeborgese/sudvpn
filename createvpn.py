@@ -9,7 +9,7 @@ import time
 import os
 import json
 from pkg_resources import resource_filename
-
+my_instance_type = 't3.micro'
     
 def choose_the_region():
     ec2 = boto3.client('ec2')
@@ -65,9 +65,12 @@ def get_price_on_demand_per_hour(region, instance, os):
     f = FLT.format(r=region, t=instance, o=os)
     pricing_client = boto3.client('pricing', region_name='us-east-1')
     data = pricing_client.get_products(ServiceCode='AmazonEC2', Filters=json.loads(f))
+    print(data)
     od = json.loads(data['PriceList'][0])['terms']['OnDemand']
     id1 = list(od)[0]
     id2 = list(od[id1]['priceDimensions'])[0]
+    print(id1)
+    print(id2)
     return od[id1]['priceDimensions'][id2]['pricePerUnit']['USD']
 
 # def get_region_location(region_code):
@@ -224,7 +227,7 @@ def create_ec2_instance(subnet_id,sg_id,bucket_name,profile_name,time_seconds):
     # Create the instance
     response = ec2.run_instances(
         ImageId=ami_id,
-        InstanceType='t3.micro',
+        InstanceType=my_instance_type,
         UserData=get_user_data(bucket_name,time_seconds),
         SecurityGroupIds=[sg_id],
         SubnetId=subnet_id,
@@ -361,7 +364,13 @@ def get_region_location(region_code):
         return ('Unknown', 'Unknown')
 
 def select_the_time(selected_region):
-    cost_1_hour = float(get_price_on_demand_per_hour(get_region_name(selected_region), 't3.micro', 'Linux'))
+    #### this is a dirty trick because there is an issue on boto3 pricing api for Spain
+    #WWW I'm not proud of this, let's hope to fix soon
+    if selected_region == 'eu-south-2':
+        cost_1_hour = float('0.0114')
+    else:
+        cost_1_hour = float(get_price_on_demand_per_hour(get_region_name(selected_region), my_instance_type, 'Linux'))
+    #####
     possible_time = [
         ['10 minutes            ', 600, str(round(cost_1_hour/6, 6))],
         ['20 minutes            ', 1200, str(round(cost_1_hour/3, 6))],
