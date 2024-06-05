@@ -44,6 +44,8 @@ def get_region_name(region_code):
     endpoint_file = resource_filename('botocore', 'data/endpoints.json')
     if region_code == "il-central-1": #for some reason the system is giving me error on this at the moment
         return "Israel (Tel Aviv)"
+    if region_code == "ca-west-1":
+        return "Canada (Central)"
     try:
         with open(endpoint_file, 'r') as f:
             data = json.load(f)
@@ -353,6 +355,7 @@ def get_region_location(region_code):
         'us-east-2': ('Ohio', 'USA'),
         'us-west-1': ('N. California', 'USA'),
         'us-west-2': ('Oregon', 'USA'),
+        'ca-west-1': ('Calgary', 'Canada'),
     }
 
     if region_code in region_mappings:
