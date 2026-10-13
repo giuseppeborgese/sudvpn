@@ -50,6 +50,10 @@ def get_region_name(region_code):
         return "Mexico (Central)"
     if region_code == "ap-southeast-7":
         return "Asia Pacific (Thailand)"
+    if region_code == "ap-east-2":
+        return "Asia Pacific (Taipei)"
+    if region_code == "ap-southeast-6":
+        return "Asia Pacific (New Zealand)"
     try:
         with open(endpoint_file, 'r') as f:
             data = json.load(f)
