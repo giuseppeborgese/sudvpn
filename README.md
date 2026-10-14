@@ -15,3 +15,6 @@ You can do whatever you want, it would be nice if you use it modify etc to menti
 # Contact me 
 To discuss about anything I'm happy to be contacted on linkedin, but please read the medium article above first
 https://www.linkedin.com/in/giuseppe-borgese-64181a7/ 
+
+# Important
+Keep the local vpn client installed on your laptop at the latest version
